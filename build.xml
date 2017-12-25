@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project basedir="." default="build" name="security-cam">
+    <property environment="env"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.8"/>
+    <property name="source" value="1.8"/>
+    <property name="aws-sdk" value="https://sdk-for-java.amazonwebservices.com/latest/aws-java-sdk.zip"/>
+    <property name="pi4j" value="http://get.pi4j.com/download/pi4j-1.2-SNAPSHOT.zip"/>
+    <path id="plugindeps.libraryclasspath">
+        <fileset dir="lib/">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+
+    <target name="clean">
+        <delete dir="build"/>
+        <delete dir="lib"/>
+    </target>
+    <target depends="clean" name="cleanall"/>
+    <target name="init">
+        <mkdir dir="lib"/>
+        <mkdir dir="build/classes"/>
+    </target>
+    <target depends="init,build-project" name="build"/>
+    <target name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <echo message="Downloading ${aws-sdk}"/>
+		<get src="${aws-sdk}" dest="aws-java-sdk.zip" skipexisting="true" verbose="false"/>
+        <echo message="Downloading ${pi4j}"/>
+		<get src="${pi4j}" dest="pi4j-1.2-SNAPSHOT.zip" skipexisting="true" verbose="false"/>
+		<unzip src="aws-java-sdk.zip" dest="aws-sdk" overwrite="false">
+            <patternset>
+                <include name="**/*.jar"/>
+            </patternset>
+        </unzip>
+		<unzip src="pi4j-1.2-SNAPSHOT.zip" dest="pi4j" overwrite="false">
+            <patternset>
+                <include name="**/*.jar"/>
+            </patternset>
+        </unzip>
+        <!--
+		<gunzip src="deps/commons-io-2.6-bin.tar.gz" dest="deps/commons-io-2.6-bin.tar"/>
+        <untar src="deps/commons-io-2.6-bin.tar" dest="deps/" />
+        -->
+        <copy toDir="lib/" flatten="true">
+            <fileset dir="aws-sdk">
+                <filename name="**/*.jar"/>
+                <type type="file"/>
+            </fileset>
+        </copy>
+        <copy toDir="lib/" flatten="true">
+            <fileset dir="pi4j">
+                <filename name="**/*.jar"/>
+                <exclude name="**/*example*.jar"/>
+                <exclude name="**/*javadoc*.jar"/>
+                <type type="file"/>
+            </fileset>
+        </copy>
+        <!--
+        <copy toDir="lib/">
+            <fileset dir="deps/commons-io-2.6/">
+                <filename name="commons-io-2.6.jar"/>
+                <type type="file"/>
+            </fileset>
+        </copy>
+        -->
+        <copy toDir="build/classes/" flatten="false">
+            <fileset dir="src/">
+                <filename name="**/*.xml"/>
+                <type type="file"/>
+            </fileset>
+        </copy>
+        <pathconvert property="mf.classpath" pathsep=" ">
+            <path refid="plugindeps.libraryclasspath" />
+        </pathconvert>
+        <javac verbose="false" debug="false" debuglevel="${debuglevel}" destdir="build/classes" includeantruntime="false" source="${source}" target="${target}">
+            <src path="src"/>
+            <classpath refid="plugindeps.libraryclasspath"/>
+        </javac>
+        <jar destfile="./${ant.project.name}.jar">
+            <manifest>
+                <attribute name="Main-Class" value="com.dampmann.picam.Main" />
+                <attribute name="Class-Path" value="${mf.classpath}" />
+            </manifest>
+            <fileset dir="build/classes/" />
+        </jar>
+    </target>
+</project>
